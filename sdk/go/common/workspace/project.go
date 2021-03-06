@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-
 	"github.com/pulumi/pulumi/sdk/v2/go/common/encoding"
 	"github.com/pulumi/pulumi/sdk/v2/go/common/resource/config"
 	"github.com/pulumi/pulumi/sdk/v2/go/common/tokens"
@@ -91,6 +90,8 @@ type Project struct {
 
 	// Backend is an optional backend configuration
 	Backend *ProjectBackend `json:"backend,omitempty" yaml:"backend,omitempty"`
+
+	FileAST *encoding.FileAST
 }
 
 func (proj *Project) Validate() error {
@@ -180,13 +181,15 @@ type ProjectStack struct {
 	EncryptionSalt string `json:"encryptionsalt,omitempty" yaml:"encryptionsalt,omitempty"`
 	// Config is an optional config bag.
 	Config config.Map `json:"config,omitempty" yaml:"config,omitempty"`
+
+	FileAST *encoding.FileAST
 }
 
 // Save writes a project definition to a file.
 func (ps *ProjectStack) Save(path string) error {
 	contract.Require(path != "", "path")
 	contract.Require(ps != nil, "ps")
-	return save(path, ps, true /*mkDirAll*/)
+	return saveAST(path, ps.FileAST, true /*mkDirAll*/)
 }
 
 type ProjectRuntimeInfo struct {
@@ -296,6 +299,11 @@ func LoadProject(path string) (*Project, error) {
 		return nil, err
 	}
 
+	proj.FileAST, err = encoding.NewFileAST(b)
+	if err != nil {
+		return nil, err
+	}
+
 	err = proj.Validate()
 	if err != nil {
 		return nil, err
@@ -371,8 +379,13 @@ func LoadProjectStack(path string) (*ProjectStack, error) {
 
 	b, err := ioutil.ReadFile(path)
 	if os.IsNotExist(err) {
+		fileAST, err := encoding.NewFileAST(nil)
+		if err != nil {
+			return nil, err
+		}
 		return &ProjectStack{
-			Config: make(config.Map),
+			Config:  make(config.Map),
+			FileAST: fileAST,
 		}, nil
 	} else if err != nil {
 		return nil, err
@@ -380,6 +393,11 @@ func LoadProjectStack(path string) (*ProjectStack, error) {
 
 	var ps ProjectStack
 	err = m.Unmarshal(b, &ps)
+	if err != nil {
+		return nil, err
+	}
+
+	ps.FileAST, err = encoding.NewFileAST(b)
 	if err != nil {
 		return nil, err
 	}
@@ -399,6 +417,21 @@ func marshallerForPath(path string) (encoding.Marshaler, error) {
 	}
 
 	return m, nil
+}
+
+func saveAST(path string, fileAST *encoding.FileAST, mkDirAll bool) error {
+	contract.Require(path != "", "path")
+	contract.Require(fileAST != nil, "fileAST")
+
+	if mkDirAll {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return err
+		}
+	}
+
+	// Changing the permissions on these file is ~ a breaking change, so disable golint.
+	//nolint: gosec
+	return ioutil.WriteFile(path, fileAST.Marshal(), 0644)
 }
 
 func save(path string, value interface{}, mkDirAll bool) error {

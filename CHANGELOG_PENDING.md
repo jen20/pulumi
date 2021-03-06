@@ -55,6 +55,9 @@ This change is marked breaking because it also renames `OnOutput` to `OnStandard
 
 - [automation/nodejs] - Add `onOutput` event handler to `PreviewOptions`.
   [#6507](https://github.com/pulumi/pulumi/pull/6507)
+  
+  [cli] Support full fidelity YAML round-tripping
+  [#6489](https://github.com/pulumi/pulumi/pull/6489)
 
 ### Bug Fixes
 
