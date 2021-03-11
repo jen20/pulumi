@@ -31,12 +31,20 @@ type FileAST struct {
 }
 
 func NewFileAST(yamlBytes []byte) (*FileAST, error) {
+	if yamlBytes == nil {
+		return &FileAST{}, nil
+	}
+
 	fileAST, err := parser.ParseBytes(yamlBytes, parser.ParseComments)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse YAML file")
 	}
 
 	return &FileAST{ast: fileAST}, nil
+}
+
+func (f *FileAST) IsEmpty() bool {
+	return f.ast == nil
 }
 
 func (f *FileAST) Marshal() []byte {
@@ -50,6 +58,10 @@ func (f *FileAST) Marshal() []byte {
 }
 
 func (f *FileAST) SetConfig(keyPath, key, value string, column int) error {
+	if f.ast == nil {
+		return nil
+	}
+
 	// TODO: probably want to handle this differently
 	if len(f.ast.Docs) < 1 {
 		return nil

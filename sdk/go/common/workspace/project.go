@@ -91,7 +91,7 @@ type Project struct {
 	// Backend is an optional backend configuration
 	Backend *ProjectBackend `json:"backend,omitempty" yaml:"backend,omitempty"`
 
-	FileAST *encoding.FileAST
+	FileAST *encoding.FileAST `json:"-" yaml:"-"`
 }
 
 func (proj *Project) Validate() error {
@@ -182,13 +182,17 @@ type ProjectStack struct {
 	// Config is an optional config bag.
 	Config config.Map `json:"config,omitempty" yaml:"config,omitempty"`
 
-	FileAST *encoding.FileAST
+	FileAST *encoding.FileAST `json:"-" yaml:"-"`
 }
 
 // Save writes a project definition to a file.
 func (ps *ProjectStack) Save(path string) error {
 	contract.Require(path != "", "path")
 	contract.Require(ps != nil, "ps")
+
+	if ps.FileAST.IsEmpty() {
+		return save(path, ps, true /*mkDirAll*/)
+	}
 	return saveAST(path, ps.FileAST, true /*mkDirAll*/)
 }
 
