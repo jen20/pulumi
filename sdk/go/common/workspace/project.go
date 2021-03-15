@@ -59,12 +59,6 @@ type ProjectBackend struct {
 }
 
 // Project is a Pulumi project manifest.
-//
-// We explicitly add yaml tags (instead of using the default behavior from https://github.com/ghodss/yaml which works
-// in terms of the JSON tags) so we can directly marshall and unmarshall this struct using go-yaml an have the fields
-// in the serialized object match the order they are defined in this struct.
-//
-// TODO[pulumi/pulumi#423]: use DOM based marshalling so we can roundtrip the seralized structure perfectly.
 type Project struct {
 	// Name is a required fully qualified name.
 	Name tokens.PackageName `json:"name" yaml:"name"`
@@ -310,7 +304,7 @@ func LoadProject(path string) (*Project, error) {
 
 	err = proj.Validate()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "file bytes: %s", string(b))
 	}
 
 	return &proj, err

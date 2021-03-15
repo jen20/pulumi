@@ -57,6 +57,8 @@ func (f *FileAST) Marshal() []byte {
 	return out.Bytes()
 }
 
+// TODO: should accept a Value instead so we can handle the secure marshalling
+//       pretty sure this is also not handling encrypted objects correctly
 func (f *FileAST) SetConfig(keyPath, key, value string, column int) error {
 	if f.ast == nil {
 		return nil
@@ -97,6 +99,10 @@ func (f *FileAST) SetConfig(keyPath, key, value string, column int) error {
 }
 
 func (f *FileAST) DeleteConfig(keyPath string, key string) error {
+	if f.ast == nil {
+		return nil
+	}
+
 	// TODO: probably want to handle this differently
 	if len(f.ast.Docs) < 1 {
 		return nil
