@@ -552,7 +552,7 @@ func newConfigSetCmd(stack *string) *cobra.Command {
 				return err
 			}
 
-			err = ps.FileAST.SetConfig("config", key.String(), v.EncryptedValue(), 3)
+			err = ps.FileAST.SetConfig("config", key.String(), v, 3)
 			if err != nil {
 				return err
 			}
@@ -622,7 +622,7 @@ func newConfigSetAllCmd(stack *string) *cobra.Command {
 					return err
 				}
 
-				err = ps.FileAST.SetConfig("config", key.String(), v.EncryptedValue(), 3)
+				err = ps.FileAST.SetConfig("config", key.String(), v, 3)
 				if err != nil {
 					return err
 				}
@@ -648,7 +648,7 @@ func newConfigSetAllCmd(stack *string) *cobra.Command {
 					return err
 				}
 
-				err = ps.FileAST.SetConfig("config", key.String(), v.EncryptedValue(), 3)
+				err = ps.FileAST.SetConfig("config", key.String(), v, 3)
 				if err != nil {
 					return err
 				}

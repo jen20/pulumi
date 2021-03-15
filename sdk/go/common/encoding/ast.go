@@ -24,6 +24,7 @@ import (
 	"github.com/pulumi/go-yaml/parser"
 	"github.com/pulumi/go-yaml/printer"
 	"github.com/pulumi/go-yaml/token"
+	"github.com/pulumi/pulumi/sdk/v2/go/common/resource/config"
 )
 
 type FileAST struct {
@@ -59,7 +60,7 @@ func (f *FileAST) Marshal() []byte {
 
 // TODO: should accept a Value instead so we can handle the secure marshalling
 //       pretty sure this is also not handling encrypted objects correctly
-func (f *FileAST) SetConfig(keyPath, key, value string, column int) error {
+func (f *FileAST) SetConfig(keyPath, key string, value config.Value, column int) error {
 	if f.ast == nil {
 		return nil
 	}
@@ -88,13 +89,33 @@ func (f *FileAST) SetConfig(keyPath, key, value string, column int) error {
 	for _, v := range node.Values {
 		if v.Key.String() == key {
 			// Update the existing value
-			v.Value = newStringNode(value, column)
+			if value.Secure() {
+				v.Value = newMappingValueNode("secure", value.EncryptedValue(), column)
+			} else {
+				v.Value = newStringNode(value.EncryptedValue(), column)
+			}
 			return nil
 		}
 	}
 
 	// Key not found, so create a new one
-	node.Values = append(node.Values, newMappingValueNode(key, value, column))
+	secureMV := func() *ast.MappingValueNode {
+		k := token.New(key, key, &token.Position{Column: column})
+		v := token.New(value.EncryptedValue(), value.EncryptedValue(), &token.Position{Column: column + 4})
+		secureToken := token.New("secure", "secure", &token.Position{Column: column + 2})
+		return &ast.MappingValueNode{
+			BaseNode: &ast.BaseNode{},
+			Start:    k,
+			Key:      ast.String(k),
+			Value: &ast.MappingValueNode{
+				BaseNode: &ast.BaseNode{},
+				Start:    k,
+				Key:      ast.String(secureToken),
+				Value:    ast.String(v),
+			},
+		}
+	}
+	node.Values = append(node.Values, secureMV())
 	return nil
 }
 
