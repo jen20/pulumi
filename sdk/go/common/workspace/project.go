@@ -16,6 +16,7 @@ package workspace
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -304,7 +305,8 @@ func LoadProject(path string) (*Project, error) {
 
 	err = proj.Validate()
 	if err != nil {
-		return nil, errors.Wrapf(err, "file bytes: %s", string(b))
+		debug := fmt.Sprintf("file bytes:\n%s\nProject:\n%#v\n", string(b), proj)
+		return nil, errors.Wrap(err, debug)
 	}
 
 	return &proj, err
